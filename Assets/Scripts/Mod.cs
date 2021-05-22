@@ -132,7 +132,7 @@ namespace Mod
             http_server.requests_queue.Add(request);
             var request_in_time = DateTime.Now;
             var timeout = DateTime.Now;
-            timeout = timeout.AddSeconds(10);
+            timeout = timeout.AddSeconds(20);
             request.context.Response.ContentType = "text/html";
             request.context.Response.ContentEncoding = Encoding.UTF8;
             while (true)
@@ -153,28 +153,6 @@ namespace Mod
             request.context.Response.OutputStream.Write(data, 0, data.Length);
             request.context.Response.Close();
             http_server.requests_queue.Remove(request);
-        }
-
-        string GetUpdatedTree()
-        {
-            var timeout = DateTime.Now;
-            timeout.AddSeconds(10);
-            var time_start = DateTime.Now;
-            http_server.tree_json = null;
-            string retval = null;
-            while (true)
-            {
-                if (http_server.tree_json_last_updated > time_start)
-                {
-                    retval = http_server.tree_json;
-                }
-                if (DateTime.Now > timeout)
-                {
-                    break;
-                }
-                Thread.Sleep(100);
-            }
-            return retval;
         }
 
         public static List<GameObject> FindRootObjects()
@@ -254,10 +232,6 @@ namespace Mod
         Thread t;
         public static HttpListener listener;
         public static string url = "http://localhost:8000/";
-        public string tree_json;
-        public DateTime tree_json_last_updated;
-        //public List<LoadObjectRequest> obj_loader_queue;
-        //public List<PositionObjectRequest> position_object_request_queue;
         public List<ApiRequest> requests_queue;
 
         public class ApiRequest
@@ -312,20 +286,9 @@ namespace Mod
         {
             api1 = new Api1();
             api1.http_server = this;
-            //obj_loader_queue = new List<LoadObjectRequest>();
-            //position_object_request_queue = new List<PositionObjectRequest>();
             requests_queue = new List<ApiRequest>();
             t = new Thread(ThreadProc);
             t.Start(this);
-        }
-
-        public void UpdateTree()
-        {
-            if (tree_json == null)
-            {
-                tree_json = Api1.GetTree();
-                tree_json_last_updated = DateTime.Now;
-            }
         }
 
         public void HandleRequest(ref ApiRequest request)
@@ -365,6 +328,14 @@ namespace Mod
                             }
                             else if (chunks[1] == "load")
                             {
+                                string bundle_path = request.context.Request.QueryString["bundle_path"];
+                                Settings.Log("Loading: " + bundle_path);
+                                Mod.DynamicBundle imported_obj;
+                                imported_obj = JsonConvert.DeserializeObject<Mod.DynamicBundle>(File.ReadAllText(bundle_path));
+                                Settings.Log("deserialized");
+                                imported_obj.Load();
+                                Settings.Log("creating runtime objects");
+                                request.context.Response.StatusCode = 200;
                                 /*ObjImporter oi = new ObjImporter();
                                 gobj = oi.LoadObject(request.context.Request.QueryString["obj_path"], request.context.Request.QueryString["texture_path"]);
                                 request.string_response = Api1.GameObjectToJSON(gobj);
@@ -442,7 +413,13 @@ namespace Mod
                     HandleRequest(ref api_request);
                 } catch (Exception e)
                 {
-                    api_request.context.Response.StatusCode = 500;
+                    try
+                    {
+                        api_request.context.Response.StatusCode = 500;
+                    } catch (ObjectDisposedException _e)
+                    {
+                        Settings.Log("Request response doesn't exist anymore");
+                    }
                     api_request.string_response = e.ToString();
                     api_request.done = true;
                 }

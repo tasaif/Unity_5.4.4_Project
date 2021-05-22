@@ -12,27 +12,27 @@ public class ExistingScript : MonoBehaviour
     void Start()
     {
         //PhotonNetwork.ConnectUsingSettings("1");
-        //http_server = new Mod.HttpServer();
-        //http_server.Start();
-        GameObject map = GameObject.Find("building002");
-        /*Mod.DynamicBundle dynamicBundle = new Mod.DynamicBundle();
-        dynamicBundle.initialize(map);
-        File.WriteAllText("dynamicbundle.json", JsonConvert.SerializeObject(dynamicBundle));
-        map.SetActive(false);*/
-        Mod.DynamicBundle imported_obj;
-        imported_obj = JsonConvert.DeserializeObject<Mod.DynamicBundle>(File.ReadAllText("dynamicbundle.json"));
-        imported_obj.Load();
+        http_server = new Mod.HttpServer();
+        http_server.Start();
+        //GameObject map = GameObject.Find("building002");
+        //Mod.DynamicBundle dynamicBundle = new Mod.DynamicBundle();
+        //dynamicBundle.initialize(map);
+        //File.WriteAllText("dynamicbundle.json", JsonConvert.SerializeObject(dynamicBundle));
+        //map.SetActive(false);
+        //Mod.DynamicBundle imported_obj;
+        //imported_obj = JsonConvert.DeserializeObject<Mod.DynamicBundle>(File.ReadAllText("dynamicbundle.json"));
+        //imported_obj.Load();
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         //repl.Update();
-        //http_server.Update();
+        http_server.Update();
     }
 
     private void OnDestroy()
     {
-        //http_server.Destroy();
+        http_server.Destroy();
     }
 }

@@ -3,3 +3,6 @@ UnityLockFile
 /Library
 /Temp
 *.meta
+.vs
+dynamicbundle.json
+*.log
