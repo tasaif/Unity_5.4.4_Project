@@ -6,3 +6,4 @@ UnityLockFile
 .vs
 dynamicbundle.json
 *.log
+*.json

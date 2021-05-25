@@ -99,7 +99,7 @@ namespace Mod
             bool mesh_loaded = false;
             public SerializableGameObject(GameObject gobj)
             {
-                id = gobj.GetInstanceID();
+                id = gobj.transform.GetInstanceID();
                 name = gobj.name;
                 transform = new Dictionary<string, string>();
                 transform["position"] = gobj.transform.position.ToString();
@@ -389,9 +389,32 @@ namespace Mod
                                 gobj.transform.position = position;
                                 request.context.Response.StatusCode = 200;
                             }
+                            else if (chunks[2] == "localEulerAngles")
+                            {
+                                Vector3 localEulerAngles = gobj.transform.localEulerAngles;
+                                var qs = request.context.Request.QueryString;
+                                foreach (string key in qs.AllKeys)
+                                {
+                                    switch (key)
+                                    {
+                                        case "x":
+                                            localEulerAngles.x = float.Parse(qs["x"]);
+                                            break;
+                                        case "y":
+                                            localEulerAngles.y = float.Parse(qs["y"]);
+                                            break;
+                                        case "z":
+                                            localEulerAngles.z = float.Parse(qs["z"]);
+                                            break;
+                                    }
+                                }
+                                gobj.transform.localEulerAngles = localEulerAngles;
+                                request.context.Response.StatusCode = 200;
+                            }
                             if (chunks[2] == "destroy")
                             {
-                                GameObject.Destroy(gobj);
+                                Settings.Log("Destroying GameObject " + gobj.name);
+                                GameObject.DestroyImmediate(gobj);
                                 request.context.Response.StatusCode = 200;
                             }
                             break;
@@ -428,13 +451,20 @@ namespace Mod
 
         /*
          * https://answers.unity.com/questions/34929/how-to-find-object-using-instance-id-taken-from-ge.html
+         * http://digitalopus.ca/UnityAssets/SelectObjWithGID.cs
          */
         public static UnityEngine.Object FindObjectFromInstanceID(int iid)
         {
-            return (UnityEngine.Object)typeof(UnityEngine.Object)
-                    .GetMethod("FindObjectFromInstanceID", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                    .Invoke(null, new object[] { iid });
-
+            
+            UnityEngine.Transform[] all = (UnityEngine.Transform[])UnityEngine.Object.FindObjectsOfType(typeof(UnityEngine.Transform));
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i].GetInstanceID() == iid)
+                {
+                    return all[i].gameObject;
+                }
+            }
+            return null;
         }
 
         /*public void ShareInformationWithOtherClients()

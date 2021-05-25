@@ -13,7 +13,7 @@ namespace Mod
     public class DynamicTexture
     {
         [JsonIgnore] public Texture2D static_texture;
-        public byte[] texture_data;
+        public string texture_data;
         public int w, h;
 
         public void initialize(Texture2D _static_texture)
@@ -21,7 +21,7 @@ namespace Mod
             static_texture = _static_texture;
             w = static_texture.width;
             h = static_texture.height;
-            texture_data = static_texture.EncodeToPNG();
+            texture_data = Convert.ToBase64String(static_texture.EncodeToPNG());
         }
     }
 
@@ -136,6 +136,7 @@ namespace Mod
         public string position;
         public string localScale;
         public string localEulerAngles;
+        public bool has_mesh_collider;
 
         public void initialize(GameObject _static_gameobject, DynamicBundle dynamicBundle)
         {
@@ -149,6 +150,7 @@ namespace Mod
             position = static_gameobject.transform.position.ToString("F4");
             localScale = static_gameobject.transform.localScale.ToString("F4");
             localEulerAngles = static_gameobject.transform.localEulerAngles.ToString("F4");
+            has_mesh_collider = static_gameobject.GetComponent<MeshCollider>() != null;
             MeshFilter mf = static_gameobject.GetComponent<MeshFilter>();
             MeshRenderer mr = static_gameobject.GetComponent<MeshRenderer>();
             material_names = new List<string>();
@@ -245,7 +247,11 @@ namespace Mod
                 DynamicTexture texture = textures_table[name];
                 texture.static_texture = new Texture2D(texture.w, texture.h);
                 texture.static_texture.name = name;
-                texture.static_texture.LoadImage(texture.texture_data);
+                if (texture.texture_data != null) texture.static_texture.LoadImage(Convert.FromBase64String(texture.texture_data));
+                else
+                {
+                    Mod.Settings.Log("Missing texture data for " + name);
+                }
                 texture.static_texture.Apply();
             }
 
@@ -284,6 +290,10 @@ namespace Mod
                         materials.Add(materials_table[material_name].static_material);
                     }
                     mr.materials = materials.ToArray();
+                    if (gameobject.has_mesh_collider)
+                    {
+                        gameobject.static_gameobject.AddComponent<MeshCollider>();
+                    }
                 }
             }
             // Configure Hierarchy
